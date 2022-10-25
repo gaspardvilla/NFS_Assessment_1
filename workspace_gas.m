@@ -148,6 +148,22 @@ ylabel('Pressure value [Pa]');
 legend([analytical_p, numerical_p], {'Analytical solution p', 'Numerical solution p_{final}'})
 hold off;
 
+% Trial
+figure(4);
+yyaxis left;
+analytical_u = plot(x_u, true_u(x_u), '--');
+hold on;
+grid on;
+numerical_u = plot(x_u, u_old, 'o-');
+ylabel('Velocity value [m/s]');
+yyaxis right;
+analytical_p = plot(x_p, true_p(x_p), '--');
+numerical_p = plot(x_p, p_star, 'o-');
+ylabel('Pressure value [Pa]');
+xlabel('Position [m]');
+legend([analytical_u, numerical_u, analytical_p, numerical_p], {'Analytical solution u', 'Numerical solution u_{final}', 'Analytical solution p', 'Numerical solution p_{final}'})
+hold off;
+
 
 
 
