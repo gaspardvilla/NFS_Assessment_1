@@ -28,7 +28,7 @@ dp = p_0 - p_out;
 %% What we can change
 
 % Initialization
-N = 11; % Nb of nodes
+N = 21; % Nb of nodes
 alpha_u = 0.1;
 alpha_p = 0.1;
 
@@ -66,8 +66,8 @@ while (r_u > tol) && (r_p > tol) && (nb_iter < nb_iter_max)
     
     % Correctors
     d = get_d(N, rho, u_old, A_u, A_p);
-    u_calc = zeros(N-1, 1);
-    p_calc = zeros(N, 1);
+    u_calc = u_star;
+    p_calc = p_prime;
     
     u_calc(1) = u_star(1) + (d(1) * (p_prime(1) - p_prime(2)));
     p_calc(1) = p_0 - ((1/2) * rho *((u_calc(1) * (A_u(1) / A_p(1)))^2));
@@ -86,8 +86,12 @@ while (r_u > tol) && (r_p > tol) && (nb_iter < nb_iter_max)
     % Update wothg under-relaxation
     u_old = (alpha_u * u_calc) + ((1 - alpha_u) * u_old);
     p_star = (alpha_p * p_calc) + ((1 - alpha_p) * p_star);
-
-    nb_iter = nb_iter + 1
+    
+    % Update iterators
+    nb_iter = nb_iter + 1;
+    if mod(nb_iter, 100) == 0
+        fprintf('Ieration: %4.2f\n', nb_iter);
+    end
 
 end
 
