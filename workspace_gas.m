@@ -1,6 +1,7 @@
 %% Clean
 close all
 clearvars
+clear all
 clc
 
 
@@ -14,7 +15,7 @@ A_out = 0.1;
 
 % Stopping conditions 
 tol = 10^(-6);
-nb_iter_max = 10^4;
+nb_iter_max = 10^6;
 
 % Linear dependence with x of the area
 A = @(x) A_in + ((A_out - A_in) * x / L);
@@ -32,10 +33,10 @@ N = 21; % Nb of nodes
 alpha_u = 0.1;
 alpha_p = 0.1;
 
-r_u = tol + 1;
-r_p = tol + 1;
+r_u = [tol + 1];
+r_p = [tol + 1];
 
-x_p = linspace(0, L, N);
+x_p = linspace(0, L, N)';
 x_u = x_p(1:N-1) + (L / (2 * (N-1)));
 
 % Area definition
@@ -49,23 +50,30 @@ m_dot = 1;
 %% Hard part
 
 % Initialization of the velocity and the pressure
-u_old = m_dot ./ (rho * A_u);
-p_star = p_0 - ((dp * x_p) / L);
+u_old = (m_dot ./ (rho * A_u));
+p_star = (p_0 - ((dp * x_p) / L));
 
 nb_iter = 0;
+
+
+%% True solutions
+
+true_u = @(x) (A_out ./ A(x)) * sqrt(2 * p_0 / rho);
+true_p = @(x) p_0 * (1 - ((A_out ./ A(x)).^2));
 
 
 
 %% For Loop is coming
 
-while (r_u > tol) && (r_p > tol) && (nb_iter < nb_iter_max)
+while ((r_u(end) > tol) || (r_p(end) > tol)) && (nb_iter < nb_iter_max)
 
     % Solvers
-    [u_star, M_u, b_u] = solver_u(N-1, A_u, A_p, rho, u_old, p_star, p_0);
-    [p_prime, b_p] = solver_p(N, A_u, A_p, rho, u_old, u_star);
-    
+    [u_star, M_u, b_u] = solver_u(N, u_old, A_u, A_p, p_0, p_star, rho);
+    [p_prime, M_p, b_p] = solver_p(N, rho, M_u, A_u, u_star);
+
+
     % Correctors
-    d = get_d(N, rho, u_old, A_u, A_p);
+    d = get_d(N, M_u, A_u);
     u_calc = u_star;
     p_calc = p_prime;
     
@@ -80,8 +88,8 @@ while (r_u > tol) && (r_p > tol) && (nb_iter < nb_iter_max)
     p_calc(N) = p_star(N) + p_prime(N);
     
     % Residual and RHS
-    r_u = norm((M_u * u_calc) - b_u) / norm(diag(M_u) .* u_calc);
-    r_p = norm(b_p);
+    r_u(end + 1) = norm((M_u * u_calc) - b_u) / norm(diag(M_u) .* u_calc);
+    r_p(end + 1) = norm(b_p);
     
     % Update wothg under-relaxation
     u_old = (alpha_u * u_calc) + ((1 - alpha_u) * u_old);
@@ -90,33 +98,55 @@ while (r_u > tol) && (r_p > tol) && (nb_iter < nb_iter_max)
     % Update iterators
     nb_iter = nb_iter + 1;
     if mod(nb_iter, 100) == 0
-        fprintf('Ieration: %4.2f\n', nb_iter);
+        fprintf('Iteration: %4.f\n', nb_iter);
     end
 
 end
 
-
-%% True solutions
-
-true_u = @(x) (A_out ./ A(x)) * sqrt(2 * p_0 / rho);
-true_p = @(x) p_0 * (1 - ((A_out ./ A(x)).^2));
-
+% Final prints
+fprintf('Final r_u = %4.10f\n', r_u(end));
+fprintf('Final r_p = %4.10f\n', r_p(end));
 
 
 
 %% Plots
+
+% Residuals plot
 figure(1);
-plot(x_u, true_u(x_u));
-hold on
-plot(x_u, u_old);
-hold off
+ru = semilogy((1:1:nb_iter), r_u(2:end));
+hold on;
+grid on;
+rp = semilogy((1:1:nb_iter), r_p(2:end));
+yline(tol, 'r--', 'Stopping condition', 'LabelHorizontalAlignment', 'left');
+last_iter = strcat('Last iteration:', {' '}, num2str(nb_iter));
+xline(nb_iter, 'k', last_iter);
+xlabel('Iteration');
+ylabel('Residual value');
+legend([ru, rp], {'r_u', 'r_p'})
+hold off;
 
-
+% Numerical solution against analytical solution
 figure(2);
-plot(x_p, true_p(x_p));
-hold on
-plot(x_p, p_star);
-hold off
+analytical_u = plot(x_u, true_u(x_u));
+hold on;
+grid on;
+numerical_u = plot(x_u, u_old, 'o-');
+xlabel('Position [m]');
+ylabel('Velocity value [m/s]');
+legend([analytical_u, numerical_u], {'Analytical solution u', 'Numerical solution u_{final}'})
+hold off;
+
+
+% Numerical solution against analytical solution
+figure(3);
+analytical_p = plot(x_p, true_p(x_p));
+hold on;
+grid on;
+numerical_p = plot(x_p, p_star, 'o-');
+xlabel('Position [m]');
+ylabel('Pressure value [Pa]');
+legend([analytical_p, numerical_p], {'Analytical solution p', 'Numerical solution p_{final}'})
+hold off;
 
 
 
