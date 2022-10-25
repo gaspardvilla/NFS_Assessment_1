@@ -4,7 +4,7 @@ function [p_prime, M_p, b_p] = solver_p(N, rho, M_u, A_u, u_star)
     % Initialization
     M_p = zeros(N, N);
     b_p = zeros(N, 1);
-    d = test_d(N, M_u, A_u);
+    d = get_d(N, M_u, A_u);
 
     % 1 and N cases
     M_p(1, 1) = 1;
