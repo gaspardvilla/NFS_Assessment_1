@@ -7,6 +7,9 @@ clc
 
 %% Not moving part
 
+% Display the plots
+plot_figure = False;
+
 % Initialization of some parameters
 L = 2.0;
 rho = 1.0;
@@ -57,7 +60,6 @@ nb_iter = 0;
 
 
 %% True solutions
-
 true_u = @(x) (A_out ./ A(x)) * sqrt(2 * p_0 / rho);
 true_p = @(x) p_0 * (1 - ((A_out ./ A(x)).^2));
 
@@ -103,66 +105,91 @@ while ((r_u(end) > tol) || (r_p(end) > tol)) && (nb_iter < nb_iter_max)
 
 end
 
-% Final prints
+
+%% Final computations
+
+% Flow rate
+m_flow = @(x) rho .* x .* A_u;
+flow_rate_pred = m_flow(u_old);
+flow_rate_true = m_flow(true_u(x_u));
+
+% Global mass balance
+mass = abs(flow_rate_pred(1) - flow_rate_pred(end)) / mean(flow_rate_pred);
+
+% Relative errors
+rel_err = @(u, v) norm(u - v) / norm(u);
+vel_error = rel_err(true_u(x_u), u_old);
+pressure_error = rel_err(true_p(x_p), p_star);
+flow_error = rel_err(flow_rate_true, flow_rate_pred);
+
+
+%% Final prints
 fprintf('Final r_u = %4.10f\n', r_u(end));
 fprintf('Final r_p = %4.10f\n', r_p(end));
-
+fprintf('Relative error for velocity = %4.10f\n', vel_error);
+fprintf('Relative error for pressure = %4.10f\n', pressure_error);
+fprintf('Relative error for flow rate = %4.10f\n', flow_error);
+fprintf('Global mass balance = %4.25f\n', mass);
 
 
 %% Plots
 
-% Residuals plot
-figure(1);
-ru = semilogy((1:1:nb_iter), r_u(2:end));
-hold on;
-grid on;
-rp = semilogy((1:1:nb_iter), r_p(2:end));
-yline(tol, 'r--', 'Stopping condition', 'LabelHorizontalAlignment', 'left');
-last_iter = strcat('Last iteration:', {' '}, num2str(nb_iter));
-xline(nb_iter, 'k', last_iter);
-xlabel('Iteration');
-ylabel('Residual value');
-legend([ru, rp], {'r_u', 'r_p'})
-hold off;
+if plot_figure
 
-% Numerical solution against analytical solution
-figure(2);
-analytical_u = plot(x_u, true_u(x_u));
-hold on;
-grid on;
-numerical_u = plot(x_u, u_old, 'o-');
-xlabel('Position [m]');
-ylabel('Velocity value [m/s]');
-legend([analytical_u, numerical_u], {'Analytical solution u', 'Numerical solution u_{final}'})
-hold off;
+    % Residuals plot
+    figure(1);
+    ru = semilogy((1:1:nb_iter), r_u(2:end));
+    hold on;
+    grid on;
+    rp = semilogy((1:1:nb_iter), r_p(2:end));
+    yline(tol, 'r--', 'Stopping condition', 'LabelHorizontalAlignment', 'left');
+    last_iter = strcat('Last iteration:', {' '}, num2str(nb_iter));
+    xline(nb_iter, 'k', last_iter);
+    xlabel('Iteration');
+    ylabel('Residual value');
+    legend([ru, rp], {'r_u', 'r_p'})
+    hold off;
+    
+    % Numerical solution against analytical solution
+    figure(2);
+    analytical_u = plot(x_u, true_u(x_u));
+    hold on;
+    grid on;
+    numerical_u = plot(x_u, u_old, 'o-');
+    xlabel('Position [m]');
+    ylabel('Velocity value [m/s]');
+    legend([analytical_u, numerical_u], {'Analytical solution u', 'Numerical solution u_{final}'})
+    hold off;
+    
+    
+    % Numerical solution against analytical solution
+    figure(3);
+    analytical_p = plot(x_p, true_p(x_p));
+    hold on;
+    grid on;
+    numerical_p = plot(x_p, p_star, 'o-');
+    xlabel('Position [m]');
+    ylabel('Pressure value [Pa]');
+    legend([analytical_p, numerical_p], {'Analytical solution p', 'Numerical solution p_{final}'})
+    hold off;
+    
+    % Trial
+    figure(4);
+    yyaxis left;
+    analytical_u = plot(x_u, true_u(x_u), '--');
+    hold on;
+    grid on;
+    numerical_u = plot(x_u, u_old, 'o-');
+    ylabel('Velocity value [m/s]');
+    yyaxis right;
+    analytical_p = plot(x_p, true_p(x_p), '--');
+    numerical_p = plot(x_p, p_star, 'o-');
+    ylabel('Pressure value [Pa]');
+    xlabel('Position [m]');
+    legend([analytical_u, numerical_u, analytical_p, numerical_p], {'Analytical solution u', 'Numerical solution u_{final}', 'Analytical solution p', 'Numerical solution p_{final}'})
+    hold off;
 
-
-% Numerical solution against analytical solution
-figure(3);
-analytical_p = plot(x_p, true_p(x_p));
-hold on;
-grid on;
-numerical_p = plot(x_p, p_star, 'o-');
-xlabel('Position [m]');
-ylabel('Pressure value [Pa]');
-legend([analytical_p, numerical_p], {'Analytical solution p', 'Numerical solution p_{final}'})
-hold off;
-
-% Trial
-figure(4);
-yyaxis left;
-analytical_u = plot(x_u, true_u(x_u), '--');
-hold on;
-grid on;
-numerical_u = plot(x_u, u_old, 'o-');
-ylabel('Velocity value [m/s]');
-yyaxis right;
-analytical_p = plot(x_p, true_p(x_p), '--');
-numerical_p = plot(x_p, p_star, 'o-');
-ylabel('Pressure value [Pa]');
-xlabel('Position [m]');
-legend([analytical_u, numerical_u, analytical_p, numerical_p], {'Analytical solution u', 'Numerical solution u_{final}', 'Analytical solution p', 'Numerical solution p_{final}'})
-hold off;
+end
 
 
 
